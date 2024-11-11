@@ -31,6 +31,17 @@ namespace ee3305
         rclcpp::Service<nav_msgs::srv::GetPlan>::SharedPtr srv_get_plan;
 
         // insert parameters if any
+        double frequency;
+        double goal_tolerance;
+        double max_path_length;
+        double inflation_radius;
+        int obstacle_cost_threshold;
+        double start_x;
+        double start_y;
+        double goal_x;
+        double goal_y;
+        bool allow_unknown;
+        bool path_smoothing;
 
         // introduce states
         std::vector<int8_t> map;
