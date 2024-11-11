@@ -19,22 +19,5 @@ controller:
     max_lin_vel: 0.3 # {double} [m/s]
     max_ang_vel: 1.0 # {double} [rad/s]
     max_lin_acc: 0.2 # {double} [m/s^2]
-    max_ang_acc: 0.2 # {double} [rad/s^2]
-
-planner:
-  ros__parameters:
-    frequency: 10.0                 # [Hz]
-    goal_tolerance: 0.1             # [m]
-    max_path_length: 50.0           #  [m]
-
-    inflation_radius: 0.5           # Radius around obstacles where cost is added to keep a safe distance [m]
-    obstacle_cost_threshold: 50     # Threshold cost (cells > 50 are obstacles)
-
-    start_x: 0.0                    # Starting position in the map frame
-    start_y: 0.0
-    goal_x: 5.0                    # Goal position in the map frame
-    goal_y: 5.0
-
-    allow_unknown: false         
-    path_smoothing: true            
+    max_ang_acc: 0.2 # {double} [rad/s^2]     
     

@@ -31,17 +31,6 @@ namespace ee3305
         rclcpp::Service<nav_msgs::srv::GetPlan>::SharedPtr srv_get_plan;
 
         // insert parameters if any
-        double frequency;
-        double goal_tolerance;
-        double max_path_length;
-        double inflation_radius;
-        int obstacle_cost_threshold;
-        double start_x;
-        double start_y;
-        double goal_x;
-        double goal_y;
-        bool allow_unknown;
-        bool path_smoothing;
 
         // introduce states
         std::vector<int8_t> map;
@@ -76,17 +65,6 @@ namespace ee3305
 
         void initParams() // initialises and read parameters
         {
-            initParam(this, "frequency", frequency);
-            initParam(this, "goal_tolerance", goal_tolerance);
-            initParam(this, "max_path_length", max_path_length);
-            initParam(this, "inflation_radius", inflation_radius);
-            initParam(this, "obstacle_cost_threshold", obstacle_cost_threshold);
-            initParam(this, "start_x", start_x);
-            initParam(this, "start_y", start_y);
-            initParam(this, "goal_x", goal_x);
-            initParam(this, "goal_y", goal_y);
-            initParam(this, "allow_unknown", allow_unknown);
-            initParam(this, "path_smoothing", path_smoothing);
         }
 
         void initTopics() // initialises topics and messages
@@ -312,27 +290,6 @@ namespace ee3305
                 }
 
                 visited[current->x][current->y] = true;
-
-                /*for (const auto& [dx, dy] : directions) {
-                    int nx = current->x + dx;
-                    int ny = current->y + dy;
-
-                    if (nx >= 0 && nx < rows && ny >= 0 && ny < cols &&
-                        !visited[nx][ny] &&
-                        (allow_unknown || map[nx * cols + ny] <= obstacle_cost_threshold)) {
-                        
-                        double g_new = current->g + ((dx == 0 || dy == 0) ? 1 : std::sqrt(2));
-                        double h_new = octile_distance(nx, ny, goal_x, goal_y);
-
-                        PlannerNode* neighbor = new PlannerNode(nx, ny, g_new, h_new, current);
-                        if (g_new < neighbor->g || h_new < neighbor->h) {
-                            neighbor->g = g_new;
-                            neighbor->h = h_new;
-                            neighbor->parent = current;
-                            open_list.push(neighbor);
-                        }
-                    }
-                }*/
 
                 for (const auto& [dx, dy] : directions) {
                     int nx = current->x + dx;
