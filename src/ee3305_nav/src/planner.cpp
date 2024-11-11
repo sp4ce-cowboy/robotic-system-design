@@ -65,6 +65,30 @@ namespace ee3305
 
         void initParams() // initialises and read parameters
         {
+            this->declare_parameter<double>("frequency", 10.0);
+            this->declare_parameter<double>("goal_tolerance", 0.1);
+            this->declare_parameter<double>("max_path_length", 50.0);
+            this->declare_parameter<double>("inflation_radius", 0.5);
+            this->declare_parameter<int>("obstacle_cost_threshold", 50);
+            this->declare_parameter<double>("start_x", 0.0);
+            this->declare_parameter<double>("start_y", 0.0);
+            this->declare_parameter<double>("goal_x", 5.0);
+            this->declare_parameter<double>("goal_y", 5.0);
+            this->declare_parameter<bool>("allow_unknown", false);
+            this->declare_parameter<bool>("path_smoothing", true);
+
+            // Assign parameter values to variables
+            this->get_parameter("frequency", frequency);
+            this->get_parameter("goal_tolerance", goal_tolerance);
+            this->get_parameter("max_path_length", max_path_length);
+            this->get_parameter("inflation_radius", inflation_radius);
+            this->get_parameter("obstacle_cost_threshold", obstacle_cost_threshold);
+            this->get_parameter("start_x", start_x);
+            this->get_parameter("start_y", start_y);
+            this->get_parameter("goal_x", goal_x);
+            this->get_parameter("goal_y", goal_y);
+            this->get_parameter("allow_unknown", allow_unknown);
+            this->get_parameter("path_smoothing", path_smoothing);
         }
 
         void initTopics() // initialises topics and messages
