@@ -151,7 +151,8 @@ namespace ee3305
             }
 
             // Call the run function to generate the path
-            std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map, rows, cols);
+            //std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map, rows, cols);
+            std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map_int, rows, cols);
 
             nav_msgs::msg::Path path;
             for (int p = path_flat.size() - 2; p >= 0; p -= 2) {
