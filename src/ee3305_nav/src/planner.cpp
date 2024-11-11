@@ -122,7 +122,8 @@ namespace ee3305
         }
 
         /** Service server that returns a path in the map coordinates */
-        void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
+        /** NEW */
+        /*void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
                   std::shared_ptr<nav_msgs::srv::GetPlan::Response> response)
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "GetPlan service request received.");
@@ -151,8 +152,8 @@ namespace ee3305
             }
 
             // Call the run function to generate the path
-            //std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map, rows, cols);
-            std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map_int, rows, cols);
+            std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map, rows, cols);
+            //std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map_int, rows, cols);
 
             nav_msgs::msg::Path path;
             for (int p = path_flat.size() - 2; p >= 0; p -= 2) {
@@ -176,10 +177,10 @@ namespace ee3305
             path.header.frame_id = "map";
             pub_path->publish(path);
             response->plan = path;
-        }
+        }*/
 
-
-        /*void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
+        /* OG */
+        void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
                           std::shared_ptr<nav_msgs::srv::GetPlan::Response> response)
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "GetPlan service request received.");
@@ -248,7 +249,7 @@ namespace ee3305
 
             // write to response
             response->plan = path; // response returns the path from start to goal (reversed from path_flat)
-        }*/
+        }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // INSERT A* PLANNER RUN FUNCTION HERE
         std::vector<int> run(int start_x, int start_y, int goal_x, int goal_y, const std::vector<int>& map, int rows, int cols) {
