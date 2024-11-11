@@ -313,7 +313,7 @@ namespace ee3305
 
                 visited[current->x][current->y] = true;
 
-                for (const auto& [dx, dy] : directions) {
+                /*for (const auto& [dx, dy] : directions) {
                     int nx = current->x + dx;
                     int ny = current->y + dy;
 
@@ -332,9 +332,9 @@ namespace ee3305
                             open_list.push(neighbor);
                         }
                     }
-                }
+                }*/
 
-                /*for (const auto& [dx, dy] : directions) {
+                for (const auto& [dx, dy] : directions) {
                     int nx = current->x + dx;
                     int ny = current->y + dy;
 
@@ -350,7 +350,7 @@ namespace ee3305
                             open_list.push(neighbor);
                         }
                     }
-                }*/
+                }
             }
 
             std::cerr << "No path found." << std::endl;
