@@ -125,6 +125,62 @@ namespace ee3305
 
         /** Service server that returns a path in the map coordinates */
         void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
+                  std::shared_ptr<nav_msgs::srv::GetPlan::Response> response)
+        {
+            RCLCPP_INFO_STREAM(this->get_logger(), "GetPlan service request received.");
+
+            while (map.empty()) { 
+                RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for a global costmap...");
+                rclcpp::sleep_for(100ms);
+                rclcpp::spin_some(this->get_node_base_interface());
+            }
+
+            double start_x = request->start.pose.position.x;
+            double start_y = request->start.pose.position.y;
+            double goal_x = request->goal.pose.position.x;
+            double goal_y = request->goal.pose.position.y;
+
+            int start_i = floor((start_x - origin_x) / resolution);
+            int start_j = floor((start_y - origin_y) / resolution);
+            int goal_i = floor((goal_x - origin_x) / resolution);
+            int goal_j = floor((goal_y - origin_y) / resolution);
+
+            // Check if goal is within goal tolerance
+            double dist_to_goal = std::hypot(goal_x - start_x, goal_y - start_y);
+            if (dist_to_goal <= goal_tolerance) {
+                RCLCPP_INFO_STREAM(this->get_logger(), "Goal already reached.");
+                return;
+            }
+
+            // Call the run function to generate the path
+            std::vector<int> path_flat = run(start_i, start_j, goal_i, goal_j, map, rows, cols);
+
+            nav_msgs::msg::Path path;
+            for (int p = path_flat.size() - 2; p >= 0; p -= 2) {
+                double i = path_flat[p];
+                double j = path_flat[p + 1];
+
+                geometry_msgs::msg::PoseStamped pose_stamped;
+                pose_stamped.header.frame_id = "map";
+                pose_stamped.header.stamp = this->now();
+                pose_stamped.pose.position.x = (i * resolution) + origin_x + resolution / 2;
+                pose_stamped.pose.position.y = (j * resolution) + origin_y + resolution / 2;
+
+                pose_stamped.pose.position.z = 0;
+                pose_stamped.pose.orientation.x = 0;
+                pose_stamped.pose.orientation.y = 0;
+                pose_stamped.pose.orientation.z = 0;
+                pose_stamped.pose.orientation.w = 1;
+
+                path.poses.push_back(pose_stamped);
+            }
+            path.header.frame_id = "map";
+            pub_path->publish(path);
+            response->plan = path;
+        }
+
+
+        /*void cbSrvGetPlan(const std::shared_ptr<nav_msgs::srv::GetPlan::Request> request,
                           std::shared_ptr<nav_msgs::srv::GetPlan::Response> response)
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "GetPlan service request received.");
@@ -193,7 +249,7 @@ namespace ee3305
 
             // write to response
             response->plan = path; // response returns the path from start to goal (reversed from path_flat)
-        }
+        }*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // INSERT A* PLANNER RUN FUNCTION HERE
         std::vector<int> run(int start_x, int start_y, int goal_x, int goal_y, const std::vector<int>& map, int rows, int cols) {
@@ -261,7 +317,10 @@ namespace ee3305
                     int nx = current->x + dx;
                     int ny = current->y + dy;
 
-                    if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && !visited[nx][ny] && map[nx * cols + ny] == 0) {
+                    if (nx >= 0 && nx < rows && ny >= 0 && ny < cols &&
+                        !visited[nx][ny] &&
+                        (allow_unknown || map[nx * cols + ny] <= obstacle_cost_threshold)) {
+                        
                         double g_new = current->g + ((dx == 0 || dy == 0) ? 1 : std::sqrt(2));
                         double h_new = octile_distance(nx, ny, goal_x, goal_y);
 
@@ -274,6 +333,24 @@ namespace ee3305
                         }
                     }
                 }
+
+                /*for (const auto& [dx, dy] : directions) {
+                    int nx = current->x + dx;
+                    int ny = current->y + dy;
+
+                    if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && !visited[nx][ny] && map[nx * cols + ny] == 0) {
+                        double g_new = current->g + ((dx == 0 || dy == 0) ? 1 : std::sqrt(2));
+                        double h_new = octile_distance(nx, ny, goal_x, goal_y);
+
+                        PlannerNode* neighbor = new PlannerNode(nx, ny, g_new, h_new, current);
+                        if (g_new < neighbor->g || h_new < neighbor->h) {
+                            neighbor->g = g_new;
+                            neighbor->h = h_new;
+                            neighbor->parent = current;
+                            open_list.push(neighbor);
+                        }
+                    }
+                }*/
             }
 
             std::cerr << "No path found." << std::endl;
