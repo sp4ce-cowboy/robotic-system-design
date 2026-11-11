@@ -3,11 +3,13 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <cmath> // Include cmath for math functions
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/srv/get_plan.hpp"
 #include "ee3305_nav/ee3305_nav.hpp"
 
@@ -33,19 +35,21 @@ namespace ee3305
         double lookahead_distance;
         double stop_thres;
         double lookahead_lin_vel;
-        double max_lin_acc;
+
         double max_lin_vel;
-        double max_ang_acc;
         double max_ang_vel;
+        double max_lin_acc;
+        double max_ang_acc;
 
         // ----------- States / Others -------------
         std::vector<double> plan_flat;
         double rbt_x;
         double rbt_y;
         double rbt_h;
+
         double prev_lin_vel;
         double prev_ang_vel;
-        double prev_time;
+        rclcpp::Time prev_time;
 
     public:
         /** Constructor. Run only once when this node is first created in `main()`. */
@@ -65,6 +69,10 @@ namespace ee3305
             rbt_x = NAN;
             rbt_y = NAN;
             rbt_h = NAN;
+
+            prev_lin_vel = 0.0;
+            prev_ang_vel = 0.0;
+            prev_time = this->now();
         }
 
         /** Initializes and read parameters, if any. */
@@ -74,10 +82,12 @@ namespace ee3305
             initParam(this, "lookahead_distance", lookahead_distance);
             initParam(this, "stop_thres", stop_thres);
             initParam(this, "lookahead_lin_vel", lookahead_lin_vel);
-            initParam(this, "max_lin_acc", max_lin_acc);
+
+            // Read maximum velocities and accelerations
             initParam(this, "max_lin_vel", max_lin_vel);
-            initParam(this, "max_ang_acc", max_ang_acc);
             initParam(this, "max_ang_vel", max_ang_vel);
+            initParam(this, "max_lin_acc", max_lin_acc);
+            initParam(this, "max_ang_acc", max_ang_acc);
         }
 
         /** Initializes topics and messages, if any. */
@@ -97,6 +107,7 @@ namespace ee3305
 
         void cbPath(nav_msgs::msg::Path::SharedPtr msg)
         {
+            // Flatten the path into a vector of x and y coordinates
             plan_flat.clear();
             for (const geometry_msgs::msg::PoseStamped &pose : msg->poses)
             {
@@ -106,151 +117,186 @@ namespace ee3305
         }
 
         void cbOdom(nav_msgs::msg::Odometry::SharedPtr msg)
-        { // transform assumes zero transform between `map` frame and `odom` frame.
+        {
+            // Update robot's current position and heading
             rbt_x = msg->pose.pose.position.x;
             rbt_y = msg->pose.pose.position.y;
             const auto &q = msg->pose.pose.orientation;
             double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
-            double cosy_cosp = 1 - 2 * (q.y + q.y + q.z * q.z);
+            double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
             rbt_h = atan2(siny_cosp, cosy_cosp);
         }
-
 
         /** Initializes the timers with their callbacks.*/
         void initTimers()
         {
             timer_main = this->create_wall_timer(
-                1s / frequency,
+                std::chrono::duration<double>(1.0 / frequency),
                 std::bind(&Controller::cbTimerMain, this));
         }
 
         /** The function that is run at regular intervals */
-        /*void cbTimerMain()
+        void cbTimerMain()
         {
-            // ensure the robot has a valid path and pose data
-            if (plan_flat.empty() || std::isnan(rbt_x))
+            // Check if robot's pose is available
+            if (std::isnan(rbt_x) || std::isnan(rbt_y) || std::isnan(rbt_h))
             {
+                RCLCPP_WARN(this->get_logger(), "Robot pose not available.");
                 return;
             }
 
-            double current_time = this->now().seconds();
-            double elapsed_time = current_time - prev_time;
+            // Get current time and compute elapsed time
+            rclcpp::Time current_time = this->now();
+            double dt = (current_time - prev_time).seconds();
+            if (dt == 0.0)
+            {
+                dt = 1.0 / frequency; // default to expected dt
+            }
             prev_time = current_time;
 
-            // Publish message
-            geometry_msgs::msg::Twist msg;
-            msg.angular.x = 0; // redundancy
-            msg.angular.y = 0; // redundancy
-            msg.angular.z = ang_vel;
-            msg.linear.x = lin_vel;
-            msg.linear.y = 0; // redundancy
-            msg.linear.z = 0; // redundancy
-            pub_cmd_vel->publish(msg);
-        }*/
+            // Helper function for sign
+            auto sgn = [](double x) -> int { return (x > 0) - (x < 0); };
 
-       void cbTimerMain()
-        {
-
-            // -- explaination of the code overall 
-            /**
-             * The ontroller file implements a ROS2 node that controls a robot using a
-             * pure pursuit algorithm. It subscribes to path and odometry topics, 
-             * calculates a lookahead point based on the robot’s current position,
-             *  and transforms this point into the robot’s frame to determine curvature. 
-             * 
-             * The controller then also calculates the necessary linear and 
-             * angular velocities to follow the path, applying constraints to 
-             * acceleration and velocity based on configurable parameters. 
-             * These velocities are published as cmd_vel messages to drive 
-             * the robot smoothly along the path. 
-             * 
-             * Key components include (for now)
-             * - velocity constraints, 
-             * - timer-based control loops, 
-             * - transformations for path following. (need to double cfm)
-             */
-
-            // --- code starts here //
-            // 1. ensure the robot has a valid path and pose data
-            if (plan_flat.empty() || std::isnan(rbt_x)) {
-                return;
-            }
-
-            // 2. Finding the closest point on the path
-            double closest = INFINITY;
-            int ci = 0;
-            for (int i = 0; i < plan_flat.size(); i += 2)
+            // Find the closest point on the path
+            double min_dist_sq = std::numeric_limits<double>::infinity();
+            size_t closest_idx = 0;
+            for (size_t i = 0; i < plan_flat.size(); i += 2)
             {
-                double dx = plan_flat[i] - rbt_x;
-                double dy = plan_flat[i + 1] - rbt_y;
-                double dist = dx * dx + dy * dy;
-                if (dist < closest)
+                double px = plan_flat[i];
+                double py = plan_flat[i + 1];
+
+                double dx = px - rbt_x;
+                double dy = py - rbt_y;
+                double dist_sq = dx * dx + dy * dy;
+
+                if (dist_sq < min_dist_sq)
                 {
-                    closest = dist;
-                    ci = i;
+                    min_dist_sq = dist_sq;
+                    closest_idx = i;
                 }
             }
 
-            // 3. Find the lookahead point
-            double look_x = plan_flat[ci];
-            double look_y = plan_flat[ci + 1];
-            for (int i = ci; i < plan_flat.size(); i += 2)
+            // Find the lookahead point
+            double lookahead_distance_sq = lookahead_distance * lookahead_distance;
+            bool lookahead_point_found = false;
+            size_t lookahead_idx = closest_idx;
+
+            for (size_t i = closest_idx; i < plan_flat.size(); i += 2)
             {
-                double dx = plan_flat[i] - rbt_x;
-                double dy = plan_flat[i + 1] - rbt_y;
-                if (sqrt(dx * dx + dy * dy) > lookahead_distance)
+                double px = plan_flat[i];
+                double py = plan_flat[i + 1];
+
+                double dx = px - rbt_x;
+                double dy = py - rbt_y;
+                double dist_sq = dx * dx + dy * dy;
+
+                if (dist_sq >= lookahead_distance_sq)
                 {
-                    look_x = plan_flat[i];
-                    look_y = plan_flat[i + 1];
+                    lookahead_idx = i;
+                    lookahead_point_found = true;
                     break;
                 }
             }
 
-            // 4. Transform the lookahead point to the robot frame
-            double dx = look_x - rbt_x;
-            double dy = look_y - rbt_y;
-            double look_rx = dx * cos(rbt_h) + dy * sin(rbt_h);
-            double look_ry = dy * cos(rbt_h) - dx * sin(rbt_h);
-
-            // 5. Calculate curvaturethen get the elapsed time
-            double curvature = (2 * look_ry) / (look_rx * look_rx + look_ry * look_ry);
-
-            double current_time = this->now().seconds();
-            double elapsed_time = current_time - prev_time;
-            prev_time = current_time;
-
-            // 6. Constrain the linear acc
-            double lin_acc = (lookahead_lin_vel - prev_lin_vel) / elapsed_time;
-            if (fabs(lin_acc) > max_lin_acc) {
-                lin_acc = copysign(max_lin_acc, lin_acc);
+            if (!lookahead_point_found)
+            {
+                lookahead_idx = plan_flat.size() - 2;
             }
 
-            double lin_vel = prev_lin_vel + lin_acc * elapsed_time;
-            lin_vel = std::min(lin_vel, max_lin_vel);
-            prev_lin_vel = lin_vel;
+            // Get the lookahead point
+            double lx = plan_flat[lookahead_idx];
+            double ly = plan_flat[lookahead_idx + 1];
 
-            // 7. Calculate angular vel (using curavture info and linear velcity))
-            double ang_vel = curvature * lin_vel;
+            // Transform lookahead point to robot frame
+            double dx = lx - rbt_x;
+            double dy = ly - rbt_y;
 
-            // 8. Constrain angular acceleration
-            double ang_acc = (ang_vel - prev_ang_vel) / elapsed_time;
-            if (fabs(ang_acc) > max_ang_acc) {
-                ang_acc = copysign(max_ang_acc, ang_acc);
+            double cos_h = cos(rbt_h);
+            double sin_h = sin(rbt_h);
+
+            double x_r = cos_h * dx + sin_h * dy;
+            double y_r = -sin_h * dx + cos_h * dy;
+
+            // Compute curvature
+            double curvature = 0.0;
+            if (x_r != 0.0 || y_r != 0.0)
+            {
+                curvature = 2.0 * y_r / (x_r * x_r + y_r * y_r);
             }
 
-            // need ot double check this
-            ang_vel = prev_ang_vel + ang_acc * elapsed_time;
-            ang_vel = std::min(ang_vel, max_ang_vel);
-            prev_ang_vel = ang_vel;
+            // Compute desired velocities
+            double desired_lin_vel = lookahead_lin_vel;
+            double desired_ang_vel = curvature * desired_lin_vel;
 
-            // Publish message
+            // Compute distance to goal
+            double goal_x = plan_flat[plan_flat.size() - 2];
+            double goal_y = plan_flat[plan_flat.size() - 1];
+            double dx_goal = goal_x - rbt_x;
+            double dy_goal = goal_y - rbt_y;
+            double dist_to_goal = sqrt(dx_goal * dx_goal + dy_goal * dy_goal);
+
+            if (dist_to_goal < stop_thres)
+            {
+                // Stop the robot
+                desired_lin_vel = 0.0;
+                desired_ang_vel = 0.0;
+                prev_lin_vel = 0.0;
+                prev_ang_vel = 0.0;
+
+                // Publish zero velocities
+                geometry_msgs::msg::Twist msg;
+                msg.linear.x = desired_lin_vel;
+                msg.angular.z = desired_ang_vel;
+                pub_cmd_vel->publish(msg);
+
+                RCLCPP_INFO(this->get_logger(), "Goal reached.");
+                return;
+            }
+
+            // Apply linear acceleration constraints
+            double max_lin_vel_change = max_lin_acc * dt;
+            double lin_vel_diff = desired_lin_vel - prev_lin_vel;
+            if (std::abs(lin_vel_diff) > max_lin_vel_change)
+            {
+                desired_lin_vel = prev_lin_vel + sgn(lin_vel_diff) * max_lin_vel_change;
+            }
+
+            // Apply linear velocity constraints
+            if (desired_lin_vel > max_lin_vel)
+            {
+                desired_lin_vel = max_lin_vel;
+            }
+            else if (desired_lin_vel < -max_lin_vel)
+            {
+                desired_lin_vel = -max_lin_vel;
+            }
+
+            // Apply angular acceleration constraints
+            double max_ang_vel_change = max_ang_acc * dt;
+            double ang_vel_diff = desired_ang_vel - prev_ang_vel;
+            if (std::abs(ang_vel_diff) > max_ang_vel_change)
+            {
+                desired_ang_vel = prev_ang_vel + sgn(ang_vel_diff) * max_ang_vel_change;
+            }
+
+            // Apply angular velocity constraints
+            if (desired_ang_vel > max_ang_vel)
+            {
+                desired_ang_vel = max_ang_vel;
+            }
+            else if (desired_ang_vel < -max_ang_vel)
+            {
+                desired_ang_vel = -max_ang_vel;
+            }
+
+            // Update previous velocities
+            prev_lin_vel = desired_lin_vel;
+            prev_ang_vel = desired_ang_vel;
+
+            // Publish velocity command
             geometry_msgs::msg::Twist msg;
-            msg.angular.x = 0; // redundancy
-            msg.angular.y = 0; // redundancy
-            msg.angular.z = ang_vel;
-            msg.linear.x = lin_vel;
-            msg.linear.y = 0; // redundancy
-            msg.linear.z = 0; // redundancy
+            msg.linear.x = desired_lin_vel;
+            msg.angular.z = desired_ang_vel;
             pub_cmd_vel->publish(msg);
         }
     };

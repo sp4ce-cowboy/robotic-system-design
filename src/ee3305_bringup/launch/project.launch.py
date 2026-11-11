@@ -11,7 +11,7 @@ def generate_launch_description():
     pkg_turtlebot3_gazebo = FindPackageShare('turtlebot3_gazebo')
     pkg_ee3305_bringup = FindPackageShare('ee3305_bringup')
 
-    gazebo_launch_path = PathJoinSubstitution([pkg_turtlebot3_gazebo, 'launch', 'turtlebot3_house.launch.py']),
+    gazebo_launch_path = PathJoinSubstitution([pkg_turtlebot3_gazebo, 'launch', 'turtlebot3_house.launch.py'])
     params_path = PathJoinSubstitution([pkg_ee3305_bringup, 'params', 'project.yaml'])
     rviz_path = PathJoinSubstitution([pkg_ee3305_bringup, 'rviz', 'project.rviz'])
     map_path = PathJoinSubstitution([pkg_ee3305_bringup, 'maps', 'my_map.yaml'])
@@ -67,6 +67,16 @@ def generate_launch_description():
         parameters=[params_path],
     )
     ld.add_action(node_planner)
+
+    # controller
+    node_controller = Node(
+        package='ee3305_nav',
+        executable='controller',
+        name='controller',
+        output='screen',
+        parameters=[params_path],
+    )
+    ld.add_action(node_controller)
     
     # rviz 
     node_rviz = Node(
