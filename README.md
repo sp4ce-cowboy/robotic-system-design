@@ -12,8 +12,6 @@ launch files. For NUS EE3305/ME3243 *Robotic System Design*.
 [![Gazebo](https://img.shields.io/badge/Gazebo-simulation-F58113)](ARCHITECTURE.md#2-system)
 [![RViz](https://img.shields.io/badge/RViz-visualisation-22314E)](src/ee3305_bringup/rviz/project.rviz)
 
-![Team](https://img.shields.io/badge/team-3-555?style=flat-square)
-![Nodes](https://img.shields.io/badge/ROS%202%20nodes-5-555?style=flat-square)
 ![C++](https://img.shields.io/badge/C%2B%2B-1.2k%20lines-555?style=flat-square)
 
 </div>
