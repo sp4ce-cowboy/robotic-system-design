@@ -7,10 +7,10 @@ The navigation stack for a simulated TurtleBot: an A\* global planner on an occu
 pure-pursuit controller that drives the robot along the path, wired together with ROS 2 topics and
 launch files. For NUS EE3305/ME3243 *Robotic System Design*.
 
-[![ROS 2](https://img.shields.io/badge/ROS%202-rclcpp-22314E?logo=ros&logoColor=white)](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/controller.cpp#L139-L300)
+[![ROS 2](https://img.shields.io/badge/ROS%202-22314E?logo=ros&logoColor=white)](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/controller.cpp#L139-L300)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/planner.cpp#L175-L260)
-[![Gazebo](https://img.shields.io/badge/Gazebo-simulation-F58113)](ARCHITECTURE.md#2-system)
-[![RViz](https://img.shields.io/badge/RViz-visualisation-22314E)](src/ee3305_bringup/rviz/project.rviz)
+[![Gazebo](https://img.shields.io/badge/Gazebo-F58113)](ARCHITECTURE.md#2-system)
+[![RViz](https://img.shields.io/badge/RViz-22314E)](src/ee3305_bringup/rviz/project.rviz)
 
 ![C++](https://img.shields.io/badge/C%2B%2B-1.2k%20lines-555?style=flat-square)
 
@@ -59,7 +59,7 @@ flowchart LR
 
 | Skill | Where it shows (click the links for the code) | Docs |
 |---|---|---|
-| **Path tracking control**<br><img alt="ROS 2" src="https://img.shields.io/badge/ROS%202-rclcpp-22314E?logo=ros&logoColor=white"> | Pure pursuit: lookahead search, curvature to angular velocity, acceleration and velocity limits, goal threshold: [`controller.cpp`](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/controller.cpp#L139-L300) | [rclcpp](https://docs.ros.org/en/humble/p/rclcpp/) |
+| **Path tracking control**<br><img alt="ROS 2" src="https://img.shields.io/badge/ROS%202-22314E?logo=ros&logoColor=white"> | Pure pursuit: lookahead search, curvature to angular velocity, acceleration and velocity limits, goal threshold: [`controller.cpp`](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/controller.cpp#L139-L300) | [rclcpp](https://docs.ros.org/en/humble/p/rclcpp/) |
 | **Path planning** | A\* with an octile heuristic and a priority queue: [`planner.cpp`](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/planner.cpp#L175-L260) | [Nav2 concepts](https://docs.nav2.org/concepts/index.html) |
 | **ROS 2 systems** | Topics, timers and callbacks; launch files and YAML parameters: [`project.launch.py`](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_bringup/launch/project.launch.py), [`project.yaml`](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_bringup/params/project.yaml) | [ROS 2 launch](https://docs.ros.org/en/humble/Tutorials/Intermediate/Launch/Launch-Main.html) |
 | **C++** | Modern C++ in ROS nodes: lambdas, `std::priority_queue`, smart parameter handling | [cppreference](https://en.cppreference.com) |
