@@ -5,7 +5,7 @@
 **A mobile robot that plans its own path and follows it, in ROS 2.**<br>
 The navigation stack for a simulated TurtleBot: an A\* global planner on an occupancy grid and a
 pure-pursuit controller that drives the robot along the path, wired together with ROS 2 topics and
-launch files. My first robotics project, for NUS EE3305/ME3243 *Robotic System Design*.
+launch files. For NUS EE3305/ME3243 *Robotic System Design*.
 
 [![ROS 2](https://img.shields.io/badge/ROS%202-rclcpp-22314E?logo=ros&logoColor=white)](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/controller.cpp#L139-L300)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](https://github.com/sp4ce-cowboy/robotic-system-design/blob/54daac50e1fe1d8af0c7f0010ea4dc71b6893996/src/ee3305_nav/src/planner.cpp#L175-L260)
@@ -31,8 +31,9 @@ launch files. My first robotics project, for NUS EE3305/ME3243 *Robotic System D
 |---|---|
 | **What** | Autonomous navigation for a differential-drive robot: localise on a map, plan a path to a goal with A\*, and follow it with pure pursuit |
 | **Context** | NUS [EE3305/ME3243](https://nusmods.com/courses/ME3243/robotic-system-design) *Robotic System Design*, AY2024/25 Semester 1, Part 2 project (Oct – Nov 2024) |
-| **Team** | Team 14: Neo Siao Bee Dawn, Asahi Sugano and Rubesh Suresh |
-| **My role** | The pure-pursuit controller node, which I also presented |
+| **Team** | Neo Siao Bee Dawn, Asahi Sugano and Rubesh Suresh |
+| **My role** | The pure-pursuit controller node ([my slides](docs/controller-slides.pdf)) |
+| **Report** | [The team's report](docs/team14-report.pdf) (13 pages; matriculation numbers redacted) |
 | **Stack** | ROS 2 (rclcpp, nav_msgs, geometry_msgs), C++, Gazebo, RViz, launch files and YAML parameters |
 
 ## How it works
