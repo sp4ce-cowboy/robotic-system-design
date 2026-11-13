@@ -55,7 +55,7 @@ flowchart LR
 - **Integration:** one launch file brings up the map, nodes, Gazebo and RViz, with parameters in
   YAML; the path topic uses sensor-data QoS so the controller always acts on the newest plan.
 
-## Skills shown
+## Skills covered
 
 | Skill | Where it shows (click the links for the code) | Docs |
 |---|---|---|
